@@ -59,10 +59,12 @@ public class HttpClientManager extends Thread {
             connection.setRequestMethod(this.method);
             connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
             connection.setRequestProperty("Charset", "utf-8");
-            DataOutputStream dop = new DataOutputStream(connection.getOutputStream());
-            dop.writeBytes(data);
-            dop.flush();
-            dop.close();
+            if (data != null && !data.isEmpty()) {
+                DataOutputStream dop = new DataOutputStream(connection.getOutputStream());
+                dop.writeBytes(data);
+                dop.flush();
+                dop.close();
+            }
             in = new InputStreamReader(connection.getInputStream());
             BufferedReader bufferedReader = new BufferedReader(in);
             StringBuffer strBuffer = new StringBuffer();

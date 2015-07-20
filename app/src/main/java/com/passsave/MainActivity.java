@@ -6,8 +6,11 @@ import android.app.ProgressDialog;
 import android.content.ContentValues;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -40,6 +43,9 @@ import com.passsave.comment.HttpClientManager;
 import com.passsave.database.DataBaseHelper;
 import com.passsave.model.UserPass;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -54,8 +60,8 @@ import java.util.Map;
 
 public class MainActivity extends BaseActivity {
 
-    //private static final String SERVER_URL = "http://192.168.15.22:8080/PassTrans/passtrans";
-    private static final String SERVER_URL = "http://passtrans.aliapp.com/passtrans";
+    //private static final String SERVER_URL = "http://192.168.15.22:8080/PassTrans/";
+    private static final String SERVER_URL = "http://passtrans.aliapp.com/";
     private static final String FILE_NAME = "passsave.csv";
     public static final int SCAN_CODE = 1;
     private Dao userPassDao;
@@ -148,6 +154,9 @@ public class MainActivity extends BaseActivity {
                         break;
                     case 2:
                         importData();
+                        break;
+                    case 3:
+                        upgrade();
                         break;
                     default:
                         break;
@@ -396,7 +405,7 @@ public class MainActivity extends BaseActivity {
         AesUtils aesUtils = new AesUtils();
         aesUtils.setIv(iv);
         String encrypted = Base64.encodeToString(aesUtils.encrypt((username + "," + password).getBytes(), key), Base64.NO_WRAP);
-        HttpClientManager manager = new HttpClientManager(SERVER_URL, "pass=" + encrypted + "&token=" + token, "POST");
+        HttpClientManager manager = new HttpClientManager(SERVER_URL + "passtrans", "pass=" + encrypted + "&token=" + token, "POST");
         manager.setHandler(new Handler() {
             @Override
             public void handleMessage(Message msg) {
@@ -417,29 +426,6 @@ public class MainActivity extends BaseActivity {
         manager.start();
     }
 
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_main, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
-        }
-
-        return super.onOptionsItemSelected(item);
-    }
-
     @Override
     public void onBackPressed() {
         if (drawerLayout.isDrawerOpen(Gravity.RIGHT)) {
@@ -453,7 +439,6 @@ public class MainActivity extends BaseActivity {
                 super.onBackPressed();
             }
         }
-        //super.onBackPressed();
     }
 
     @Override
@@ -462,20 +447,71 @@ public class MainActivity extends BaseActivity {
         UserPass userPass = list.get(info.position);
         switch (item.getItemId()) {
             case 0:
-                deleteData(userPass.getId());
-                Toast.makeText(MainActivity.this, "删除成功", Toast.LENGTH_SHORT).show();
+                try {
+                    userPassDao.deleteById(userPass.getId());
+                    Toast.makeText(MainActivity.this, "删除成功", Toast.LENGTH_SHORT).show();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
                 return true;
             default:
                 return super.onContextItemSelected(item);
         }
     }
 
-    private void deleteData(int id) {
-        try {
-            userPassDao.deleteById(id);
-            showList();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+    private void upgrade() {
+        HttpClientManager manager = new HttpClientManager(SERVER_URL + "version", null, "GET");
+        manager.setHandler(new Handler() {
+            @Override
+            public void handleMessage(Message msg) {
+                if (msg.what == HttpClientManager.COMPLETE) {
+                    Bundle bundle = msg.getData();
+                    if (bundle.getInt("status") == 200) {
+                        try {
+                            JSONObject json = new JSONObject(bundle.getString("result"));
+                            PackageManager packageManager = getPackageManager();
+                            PackageInfo packageInfo = packageManager.getPackageInfo(getPackageName(), PackageManager.GET_CONFIGURATIONS);
+                            int localVersion = packageInfo.versionCode;
+                            int serverVersion = json.getInt("version");
+                            if (localVersion < serverVersion) {
+                                sendNotification(json.getString("upgradeUrl"));
+                            } else {
+                                Toast.makeText(MainActivity.this, "已经是最新版，无需更新", Toast.LENGTH_LONG).show();
+                            }
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        } catch (PackageManager.NameNotFoundException e) {
+                            e.printStackTrace();
+                        }
+                    } else {
+                        Toast.makeText(MainActivity.this, "Failure", Toast.LENGTH_LONG).show();
+                    }
+                }
+                if (msg.what == HttpClientManager.ERROR) {
+                    Toast.makeText(MainActivity.this, "Error", Toast.LENGTH_LONG).show();
+                }
+            }
+        });
+        manager.start();
+    }
+
+    private void sendNotification(final String upgradeUrl) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+        builder.setTitle("提示");
+        builder.setMessage("发现新版本，是否更新？");
+        builder.setNegativeButton("暂不更新", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+
+            }
+        });
+        builder.setPositiveButton("更新", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(upgradeUrl));
+                startActivity(intent);
+            }
+        });
+        builder.create().show();
     }
 }
