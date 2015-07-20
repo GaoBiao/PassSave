@@ -212,17 +212,18 @@ public class MainActivity extends BaseActivity {
                 while ((line = bfr.readLine()) != null) {
                     String[] values = line.split(",");
                     String username;
-                    Integer userId;
                     if (usernameIndex != -1) {
                         username = values[usernameIndex];
                         if (username != null && !username.isEmpty()) {
                             UserPass userPass = new UserPass();
                             userPass.setUsername(username);
+                            String domain = null;
                             if (passwordIndex != -1) {
                                 userPass.setPassword(values[passwordIndex]);
                             }
                             if (domainIndex != -1) {
-                                userPass.setDomain(values[domainIndex]);
+                                domain = values[domainIndex];
+                                userPass.setDomain(domain);
                             }
                             if (nameIndex != -1) {
                                 userPass.setName(values[nameIndex]);
@@ -230,10 +231,13 @@ public class MainActivity extends BaseActivity {
                             if (userIdIndex != -1 && values[userIdIndex] != null) {
                                 userPass.setUserId(Integer.parseInt(values[userIdIndex]));
                             }
-                            DeleteBuilder deleteBuilder = userPassDao.deleteBuilder();
-                            deleteBuilder.where().eq("username", username);
-                            deleteBuilder.delete();
-                            userPassDao.create(userPass);
+                            Map<String, Object> map = new HashMap<>();
+                            map.put("domain", domain);
+                            map.put("username", username);
+                            List list = userPassDao.queryForFieldValues(map);
+                            if (list == null || list.isEmpty()) {
+                                userPassDao.create(userPass);
+                            }
                         }
                     }
                 }
