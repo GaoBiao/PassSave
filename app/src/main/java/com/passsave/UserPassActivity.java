@@ -1,17 +1,14 @@
 package com.passsave;
 
+import android.app.Activity;
 import android.app.AlertDialog;
-import android.content.ContentValues;
 import android.content.Intent;
-import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.text.method.HideReturnsTransformationMethod;
 import android.text.method.PasswordTransformationMethod;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
@@ -24,10 +21,6 @@ import com.passsave.database.DataBaseHelper;
 import com.passsave.model.UserPass;
 
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 
 public class UserPassActivity extends BaseActivity {
@@ -96,14 +89,15 @@ public class UserPassActivity extends BaseActivity {
                 } catch (SQLException e) {
                     e.printStackTrace();
                 }
-                UserPassActivity.this.finish();
+                setResult(Activity.RESULT_OK);
+                finish();
             }
         });
         Button cancelBtn = (Button) findViewById(R.id.cancelBtn);
         cancelBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                UserPassActivity.this.finish();
+                finish();
             }
         });
 

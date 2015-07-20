@@ -1,5 +1,6 @@
 package com.passsave;
 
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Application;
 import android.app.ProgressDialog;
@@ -64,6 +65,7 @@ public class MainActivity extends BaseActivity {
     private static final String SERVER_URL = "http://passtrans.aliapp.com/";
     private static final String FILE_NAME = "passsave.csv";
     public static final int SCAN_CODE = 1;
+    public static final int EDIT_CODE = 2;
     private Dao userPassDao;
     private ListView listView;
     private long mExitTime;
@@ -115,7 +117,7 @@ public class MainActivity extends BaseActivity {
                 Intent intent = new Intent(MainActivity.this, UserPassActivity.class);
                 UserPass userPass = list.get(position);
                 intent.putExtra("id", userPass.getId());
-                startActivity(intent);
+                startActivityForResult(intent, EDIT_CODE);
             }
         });
 
@@ -124,7 +126,7 @@ public class MainActivity extends BaseActivity {
             @Override
             public void onClick(View v) {
                 Intent intent = new Intent(MainActivity.this, UserPassActivity.class);
-                startActivity(intent);
+                startActivityForResult(intent, EDIT_CODE);
             }
         });
         showList();
@@ -296,12 +298,6 @@ public class MainActivity extends BaseActivity {
         }
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        showList();
-    }
-
     private void showList() {
         try {
             String[] from = {"name", "domain"};
@@ -323,6 +319,11 @@ public class MainActivity extends BaseActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         switch (requestCode) {
+            case EDIT_CODE:
+                if (resultCode == Activity.RESULT_OK) {
+                    showList();
+                }
+                break;
             case SCAN_CODE:
                 if (resultCode == RESULT_OK) {
                     String result = data.getStringExtra("scan_result");
@@ -449,6 +450,7 @@ public class MainActivity extends BaseActivity {
             case 0:
                 try {
                     userPassDao.deleteById(userPass.getId());
+                    showList();
                     Toast.makeText(MainActivity.this, "删除成功", Toast.LENGTH_SHORT).show();
                 } catch (SQLException e) {
                     e.printStackTrace();
