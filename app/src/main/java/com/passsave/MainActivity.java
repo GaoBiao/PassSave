@@ -478,7 +478,7 @@ public class MainActivity extends BaseActivity {
                             PackageManager packageManager = getPackageManager();
                             PackageInfo packageInfo = packageManager.getPackageInfo(getPackageName(), PackageManager.GET_CONFIGURATIONS);
                             int localVersion = packageInfo.versionCode;
-                            int serverVersion = json.getInt("version");
+                            int serverVersion = json.getInt("versionCode");
                             if (localVersion < serverVersion) {
                                 sendNotification(json.getString("upgradeUrl"));
                             } else {
