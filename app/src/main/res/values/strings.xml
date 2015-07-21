@@ -13,7 +13,7 @@
     <string name="msg_default_type">Type</string>
     <string name="msg_default_meta">Metadata</string>
     <string name="button_google_shopper">Shopper</string>
-    <string name="msg_default_status">Place a barcode inside the viewfinder rectangle to scan it.</string>
+    <string name="msg_default_status">请讲二维码置于取景框内扫描</string>
 
 
     <string name="preferences_actions_title">When a barcode is found\u2026</string>
